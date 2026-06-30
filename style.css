@@ -210,18 +210,17 @@ body {
     visibility: visible;
 }
 
-/* 图片本体 */
+/* 图片本体 —— 手机端核心 */
 .viewer-img {
     max-width: 90%;
     max-height: 80vh;
     object-fit: contain;
-    transition: transform 0.08s ease-out;
-    cursor: grab;
     touch-action: none !important;
     -webkit-user-select: none !important;
     user-select: none !important;
     -webkit-user-drag: none;
     will-change: transform;
+    /* 手机端用 JS 直接设 transform，不需要 CSS transition */
 }
 
 .viewer-img:active {
@@ -339,8 +338,6 @@ body {
     .viewer-img {
         max-width: 100%;
         max-height: 100vh;
-        /* 手机端去掉 transition，靠 JS 直接设 transform，更跟手 */
-        transition: none;
     }
 
     /* 底部控制栏：手机端更大更靠下 */
