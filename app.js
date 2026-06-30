@@ -22,6 +22,9 @@ let isSwiping = false;
 // 双击检测
 let lastTapTime = 0;
 
+// ✅ 新增：是否处于图片查看模式
+let viewerActive = false;
+
 // ===== 初始化 =====
 document.addEventListener('DOMContentLoaded', () => {
     renderNavbar();
@@ -101,10 +104,9 @@ const img = document.getElementById('viewerImg');
 
 /* 打开查看器 */
 function openViewer(imgPath, items, index) {
-    if (!img || !viewer) {
-        console.error('DOM 元素缺失！请确认 HTML 中有 #viewerImg 和 #imageViewer');
-        return;
-    }
+    if (!img || !viewer) return;
+
+    viewerActive = true; // ✅ 启用触摸手势
     currentImages = items.map(item => item.img);
     currentIndex = index || 0;
 
@@ -113,14 +115,13 @@ function openViewer(imgPath, items, index) {
     offsetX = 0;
     offsetY = 0;
     applyTransform();
+
     viewer.classList.add('active');
     updateViewerButtons();
-
-    // 阻止背景滚动
     document.body.style.overflow = 'hidden';
 }
 
-/* 更新上一张/下一张按钮状态 */
+/* 更新按钮 */
 function updateViewerButtons() {
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
@@ -143,6 +144,7 @@ function changeImage(delta) {
 
 /* 关闭 */
 function closeViewerHandler() {
+    viewerActive = false; // ✅ 禁用触摸手势
     viewer.classList.remove('active');
     scale = 1;
     offsetX = 0;
@@ -151,18 +153,14 @@ function closeViewerHandler() {
 }
 document.getElementById('closeViewer').onclick = closeViewerHandler;
 
-/* 放大/缩小按钮 */
+/* 放大/缩小 */
 document.getElementById('zoomIn').onclick = () => {
     scale = Math.min(scale * 1.3, 5);
     applyTransform();
 };
-
 document.getElementById('zoomOut').onclick = () => {
     scale = Math.max(scale / 1.3, 0.5);
-    if (scale <= 1) {
-        offsetX = 0;
-        offsetY = 0;
-    }
+    if (scale <= 1) offsetX = offsetY = 0;
     applyTransform();
 };
 
@@ -174,7 +172,7 @@ function applyTransform() {
     img.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
 }
 
-/* 滚轮缩放（PC端） */
+/* 滚轮缩放 */
 viewer.addEventListener('wheel', e => {
     e.preventDefault();
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
@@ -182,39 +180,35 @@ viewer.addEventListener('wheel', e => {
     applyTransform();
 }, { passive: false });
 
-/* 鼠标拖拽（PC端） */
+/* 鼠标拖拽 */
 img.onmousedown = function (e) {
-    if (e.button !== 0) return;
-    if (scale <= 1) return;
+    if (e.button !== 0 || scale <= 1) return;
     isDragging = true;
     dragStartX = e.clientX - offsetX;
     dragStartY = e.clientY - offsetY;
     img.style.cursor = 'grabbing';
     e.preventDefault();
 };
-
 img.onmousemove = function (e) {
     if (!isDragging) return;
     offsetX = e.clientX - dragStartX;
     offsetY = e.clientY - dragStartY;
     applyTransform();
 };
-
-img.onmouseup = function () {
+img.onmouseup = () => {
     isDragging = false;
     img.style.cursor = scale > 1 ? 'grab' : 'default';
 };
-
-img.onmouseleave = function () {
+img.onmouseleave = () => {
     isDragging = false;
     img.style.cursor = scale > 1 ? 'grab' : 'default';
 };
 
 // ===================================================================
-//  手机端触摸手势 —— 完全重写，专注解决「双指放大不灵敏」问题
+//  手机端触摸手势（✅ 仅在 viewerActive 为 true 时生效）
 // ===================================================================
 function setupTouchGestures() {
-    // ---------- 工具函数 ----------
+
     function getTouchDistance(touches) {
         return Math.hypot(
             touches[0].clientX - touches[1].clientX,
@@ -222,10 +216,9 @@ function setupTouchGestures() {
         );
     }
 
-    // ---------- touchstart ----------
-    // 用 passive: false 确保 e.preventDefault() 一定生效
+    /* touchstart */
     viewer.addEventListener('touchstart', function (e) {
-        // 一律先 preventDefault，阻止浏览器默认缩放/滚动
+        if (!viewerActive) return;
         e.preventDefault();
 
         if (e.touches.length === 1) {
@@ -234,16 +227,13 @@ function setupTouchGestures() {
             swipeStartY = t.clientY;
 
             if (scale > 1) {
-                // 已放大 → 单指拖拽
                 isDragging = true;
                 dragStartX = t.clientX - offsetX;
                 dragStartY = t.clientY - offsetY;
             } else {
-                // 未放大 → 准备滑动切图
                 isSwiping = true;
             }
         } else if (e.touches.length === 2) {
-            // 双指 → 缩放
             isPinching = true;
             isDragging = false;
             isSwiping = false;
@@ -251,54 +241,40 @@ function setupTouchGestures() {
         }
     }, { passive: false });
 
-    // ---------- touchmove ----------
+    /* touchmove */
     viewer.addEventListener('touchmove', function (e) {
-        // 一律先 preventDefault，抢在浏览器之前处理
+        if (!viewerActive) return;
         e.preventDefault();
 
-        if (e.touches.length === 1) {
-            if (isDragging && scale > 1) {
-                // 单指拖拽放大的图片
-                offsetX = e.touches[0].clientX - dragStartX;
-                offsetY = e.touches[0].clientY - dragStartY;
-                applyTransform();
-            } else if (isSwiping && scale <= 1) {
-                // 水平滑动切图（不需要做位移，touchend 时判断）
-                // 这里不做 preventDefault 以外的处理
-            }
+        if (e.touches.length === 1 && isDragging && scale > 1) {
+            offsetX = e.touches[0].clientX - dragStartX;
+            offsetY = e.touches[0].clientY - dragStartY;
+            applyTransform();
         } else if (e.touches.length === 2 && isPinching) {
-            // ★ 核心：双指缩放 ★
             const dist = getTouchDistance(e.touches);
-            const ratio = dist / lastTouchDistance;
-            scale = Math.max(0.5, Math.min(scale * ratio, 5));
+            scale = Math.max(0.5, Math.min(scale * (dist / lastTouchDistance), 5));
             applyTransform();
             lastTouchDistance = dist;
         }
     }, { passive: false });
 
-    // ---------- touchend ----------
+    /* touchend */
     viewer.addEventListener('touchend', function (e) {
+        if (!viewerActive) return;
+
         if (e.touches.length === 0) {
-            // 所有手指离开
             if (isSwiping && scale <= 1) {
                 const diffX = e.changedTouches[0].clientX - swipeStartX;
                 if (Math.abs(diffX) > 50) {
-                    if (diffX > 0) {
-                        changeImage(-1);  // 右滑 → 上一张
-                    } else {
-                        changeImage(1);   // 左滑 → 下一张
-                    }
+                    changeImage(diffX > 0 ? -1 : 1);
                 }
             }
-            // 重置
             isDragging = false;
             isSwiping = false;
             isPinching = false;
         } else if (e.touches.length === 1 && isPinching) {
-            // 从双指变为单指（一只手抬起）
             isPinching = false;
             if (scale > 1) {
-                // 继续拖拽
                 isDragging = true;
                 dragStartX = e.touches[0].clientX - offsetX;
                 dragStartY = e.touches[0].clientY - offsetY;
@@ -306,29 +282,26 @@ function setupTouchGestures() {
         }
     }, { passive: true });
 
-    // ---------- 双击放大/还原 ----------
+    /* 双击 */
     img.addEventListener('touchend', function (e) {
+        if (!viewerActive) return;
+
         const now = Date.now();
         if (now - lastTapTime < 350) {
-            // 双击
             e.preventDefault();
             if (scale > 1) {
-                // 还原
                 scale = 1;
                 offsetX = 0;
                 offsetY = 0;
             } else {
-                // 放大到 2 倍，以点击位置为中心
                 scale = 2;
                 const t = e.changedTouches[0];
                 const rect = img.getBoundingClientRect();
-                const imgCX = rect.left + rect.width / 2;
-                const imgCY = rect.top + rect.height / 2;
-                offsetX = (imgCX - t.clientX) * (scale - 1);
-                offsetY = (imgCY - t.clientY) * (scale - 1);
+                offsetX = (rect.left + rect.width / 2 - t.clientX) * (scale - 1);
+                offsetY = (rect.top + rect.height / 2 - t.clientY) * (scale - 1);
             }
             applyTransform();
-            lastTapTime = 0; // 重置，避免三连击
+            lastTapTime = 0;
         } else {
             lastTapTime = now;
         }
