@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>宸星电竞</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <!-- 粒子背景 -->
+    <canvas id="particles"></canvas>
+
+    <!-- 顶部主题 -->
+    <header class="header">
+        <h1>宸星电竞</h1>
+    </header>
+
+    <!-- 导航栏 -->
+    <nav class="navbar" id="navbar">
+        <!-- 动态渲染 -->
+    </nav>
+
+    <!-- 搜索栏 -->
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="搜索游戏玩法/单子..." autocomplete="off" />
+    </div>
+
+    <!-- 菜单区域 -->
+    <section class="menu-section" id="menuSection">
+        <!-- 动态渲染 -->
+    </section>
+
+    <!-- 图片查看器 -->
+    <div class="image-viewer" id="imageViewer">
+        <img src="" alt="大图" class="viewer-img" id="viewerImg" />
+        <div class="viewer-controls">
+            <button class="viewer-btn" id="prevBtn">← 上一张</button>
+            <button class="viewer-btn" id="zoomOut">缩小</button>
+            <button class="viewer-btn" id="zoomIn">放大</button>
+            <button class="viewer-btn" id="nextBtn">下一张 →</button>
+        </div>
+        <button class="viewer-btn close-btn" id="closeViewer">× 关闭</button>
+    </div>
+
+    <!-- 引入数据 & 逻辑 -->
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
