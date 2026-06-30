@@ -8,6 +8,12 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>宸星电竞</title>
     <link rel="stylesheet" href="style.css" />
+    <!-- iOS Safari 专用：彻底禁用默认双指缩放/手势，让 JS 完全接管 -->
+    <script>
+        document.addEventListener('gesturestart', function (e) { e.preventDefault(); }, { passive: false });
+        document.addEventListener('gesturechange', function (e) { e.preventDefault(); }, { passive: false });
+        document.addEventListener('gestureend', function (e) { e.preventDefault(); }, { passive: false });
+    </script>
 </head>
 
 <body>
