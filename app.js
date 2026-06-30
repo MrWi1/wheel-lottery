@@ -47,7 +47,6 @@ function renderNavbar() {
         };
         navbar.appendChild(btn);
     }
-    // 默认激活第一个有内容的分类
     const firstActive = Object.keys(MENU_DATA).find(key => MENU_DATA[key].items.length > 0);
     if (firstActive) {
         const activeBtn = document.querySelector(`[data-category="${firstActive}"]`);
@@ -170,7 +169,12 @@ document.getElementById('zoomOut').onclick = () => {
 document.getElementById('prevBtn').onclick = () => changeImage(-1);
 document.getElementById('nextBtn').onclick = () => changeImage(1);
 
-/* 滚轮缩放 */
+/* 应用变换 */
+function applyTransform() {
+    img.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
+}
+
+/* 滚轮缩放（PC端） */
 viewer.addEventListener('wheel', e => {
     e.preventDefault();
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
@@ -178,7 +182,7 @@ viewer.addEventListener('wheel', e => {
     applyTransform();
 }, { passive: false });
 
-/* 鼠标拖拽 */
+/* 鼠标拖拽（PC端） */
 img.onmousedown = function (e) {
     if (e.button !== 0) return;
     if (scale <= 1) return;
@@ -206,14 +210,11 @@ img.onmouseleave = function () {
     img.style.cursor = scale > 1 ? 'grab' : 'default';
 };
 
-/* 应用变换 */
-function applyTransform() {
-    img.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
-}
-
-// ===== 手机端触摸手势（完整重写，解决双指放大和移动问题）=====
+// ===================================================================
+//  手机端触摸手势 —— 完全重写，专注解决「双指放大不灵敏」问题
+// ===================================================================
 function setupTouchGestures() {
-    // 计算两指间距
+    // ---------- 工具函数 ----------
     function getTouchDistance(touches) {
         return Math.hypot(
             touches[0].clientX - touches[1].clientX,
@@ -221,71 +222,65 @@ function setupTouchGestures() {
         );
     }
 
-    // 计算两指中心点
-    function getTouchCenter(touches) {
-        return {
-            x: (touches[0].clientX + touches[1].clientX) / 2,
-            y: (touches[0].clientY + touches[1].clientY) / 2
-        };
-    }
-
+    // ---------- touchstart ----------
+    // 用 passive: false 确保 e.preventDefault() 一定生效
     viewer.addEventListener('touchstart', function (e) {
-        if (e.touches.length === 1) {
-            const touch = e.touches[0];
-            swipeStartX = touch.clientX;
-            swipeStartY = touch.clientY;
+        // 一律先 preventDefault，阻止浏览器默认缩放/滚动
+        e.preventDefault();
 
-            // 如果已放大，进入拖拽模式
+        if (e.touches.length === 1) {
+            const t = e.touches[0];
+            swipeStartX = t.clientX;
+            swipeStartY = t.clientY;
+
             if (scale > 1) {
+                // 已放大 → 单指拖拽
                 isDragging = true;
-                dragStartX = touch.clientX - offsetX;
-                dragStartY = touch.clientY - offsetY;
+                dragStartX = t.clientX - offsetX;
+                dragStartY = t.clientY - offsetY;
             } else {
-                // 未放大，准备滑动切换
+                // 未放大 → 准备滑动切图
                 isSwiping = true;
             }
         } else if (e.touches.length === 2) {
-            // 双指开始缩放
+            // 双指 → 缩放
             isPinching = true;
             isDragging = false;
             isSwiping = false;
             lastTouchDistance = getTouchDistance(e.touches);
         }
-    }, { passive: true });
+    }, { passive: false });
 
+    // ---------- touchmove ----------
     viewer.addEventListener('touchmove', function (e) {
+        // 一律先 preventDefault，抢在浏览器之前处理
+        e.preventDefault();
+
         if (e.touches.length === 1) {
             if (isDragging && scale > 1) {
-                // 单指拖拽已放大的图片
-                e.preventDefault();
+                // 单指拖拽放大的图片
                 offsetX = e.touches[0].clientX - dragStartX;
                 offsetY = e.touches[0].clientY - dragStartY;
                 applyTransform();
             } else if (isSwiping && scale <= 1) {
-                // 检测是否为水平滑动（用于切换图片）
-                const diffX = e.touches[0].clientX - swipeStartX;
-                const diffY = e.touches[0].clientY - swipeStartY;
-                // 如果水平滑动距离明显大于垂直，则认为是滑动切换
-                if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 10) {
-                    e.preventDefault();
-                }
+                // 水平滑动切图（不需要做位移，touchend 时判断）
+                // 这里不做 preventDefault 以外的处理
             }
         } else if (e.touches.length === 2 && isPinching) {
-            // 双指缩放 —— 核心逻辑
-            e.preventDefault();
-            const distance = getTouchDistance(e.touches);
-            const delta = distance / lastTouchDistance;
-            scale = Math.max(0.5, Math.min(scale * delta, 5));
+            // ★ 核心：双指缩放 ★
+            const dist = getTouchDistance(e.touches);
+            const ratio = dist / lastTouchDistance;
+            scale = Math.max(0.5, Math.min(scale * ratio, 5));
             applyTransform();
-            lastTouchDistance = distance;
+            lastTouchDistance = dist;
         }
     }, { passive: false });
 
+    // ---------- touchend ----------
     viewer.addEventListener('touchend', function (e) {
         if (e.touches.length === 0) {
             // 所有手指离开
             if (isSwiping && scale <= 1) {
-                // 判断是否为滑动切换
                 const diffX = e.changedTouches[0].clientX - swipeStartX;
                 if (Math.abs(diffX) > 50) {
                     if (diffX > 0) {
@@ -295,15 +290,15 @@ function setupTouchGestures() {
                     }
                 }
             }
-            // 重置所有状态
+            // 重置
             isDragging = false;
             isSwiping = false;
             isPinching = false;
         } else if (e.touches.length === 1 && isPinching) {
-            // 从双指变为单指（有一个手指抬起）
+            // 从双指变为单指（一只手抬起）
             isPinching = false;
-            // 如果当前已放大，继续拖拽模式
             if (scale > 1) {
+                // 继续拖拽
                 isDragging = true;
                 dragStartX = e.touches[0].clientX - offsetX;
                 dragStartY = e.touches[0].clientY - offsetY;
@@ -311,7 +306,7 @@ function setupTouchGestures() {
         }
     }, { passive: true });
 
-    // ===== 双击放大/还原 =====
+    // ---------- 双击放大/还原 ----------
     img.addEventListener('touchend', function (e) {
         const now = Date.now();
         if (now - lastTapTime < 350) {
@@ -323,19 +318,20 @@ function setupTouchGestures() {
                 offsetX = 0;
                 offsetY = 0;
             } else {
-                // 放大到2倍
+                // 放大到 2 倍，以点击位置为中心
                 scale = 2;
-                // 让双击位置居中
-                const touch = e.changedTouches[0];
+                const t = e.changedTouches[0];
                 const rect = img.getBoundingClientRect();
-                const imgCenterX = rect.left + rect.width / 2;
-                const imgCenterY = rect.top + rect.height / 2;
-                offsetX = (imgCenterX - touch.clientX) * (scale - 1);
-                offsetY = (imgCenterY - touch.clientY) * (scale - 1);
+                const imgCX = rect.left + rect.width / 2;
+                const imgCY = rect.top + rect.height / 2;
+                offsetX = (imgCX - t.clientX) * (scale - 1);
+                offsetY = (imgCY - t.clientY) * (scale - 1);
             }
             applyTransform();
+            lastTapTime = 0; // 重置，避免三连击
+        } else {
+            lastTapTime = now;
         }
-        lastTapTime = now;
     }, { passive: false });
 }
 
