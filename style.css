@@ -123,7 +123,6 @@ body {
     user-select: none;
 }
 
-/* 手机端触摸反馈 */
 .card:active {
     transform: scale(0.97);
 }
@@ -186,7 +185,9 @@ body {
     line-height: 1.4;
 }
 
-/* 图片查看器 */
+/* ============================================
+   图片查看器（PC + 手机通用）
+   ============================================ */
 .image-viewer {
     position: fixed;
     top: 0;
@@ -209,53 +210,25 @@ body {
     visibility: visible;
 }
 
-.viewer-header {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    right: 20px;
-    background: rgba(0, 0, 0, 0.7);
-    padding: 15px;
-    border-radius: 8px;
-    color: white;
-    z-index: 10;
-    max-width: 80%;
-}
-
-.viewer-title {
-    font-size: 24px;
-    font-weight: bold;
-    margin: 0 0 8px 0;
-    color: #00ffff;
-}
-
-.viewer-desc {
-    font-size: 14px;
-    opacity: 0.9;
-    margin: 0 0 8px 0;
-}
-
-.viewer-tags {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-}
-
+/* 图片本体 */
 .viewer-img {
     max-width: 90%;
     max-height: 80vh;
     object-fit: contain;
-    transition: transform 0.1s ease;
+    transition: transform 0.08s ease-out;
     cursor: grab;
-    touch-action: none;
-    -webkit-user-select: none;
-    user-select: none;
+    touch-action: none !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
+    -webkit-user-drag: none;
+    will-change: transform;
 }
 
 .viewer-img:active {
     cursor: grabbing;
 }
 
+/* 底部控制栏 */
 .viewer-controls {
     position: absolute;
     bottom: 20px;
@@ -290,16 +263,16 @@ body {
 }
 
 /* ============================================
-   手机端适配 (≤768px 平板/大手机)
+   手机端适配 (≤768px)
    ============================================ */
 @media (max-width: 768px) {
-    /* Header 缩小 */
+    /* Header */
     .header {
         font-size: 1.6rem;
         padding: 14px 0;
     }
 
-    /* 导航栏 → 横向滚动胶囊导航 */
+    /* 导航栏 → 横向滚动胶囊 */
     .navbar {
         flex-wrap: nowrap;
         overflow-x: auto;
@@ -320,14 +293,13 @@ body {
         padding: 6px 14px;
         font-size: 0.85rem;
         border-radius: 999px;
-        min-width: fit-content;
     }
 
-    /* 搜索栏 */
+    /* 搜索栏吸顶 */
     .search-bar {
         padding: 10px 14px;
         position: sticky;
-        top: 49px;
+        top: 45px;
         z-index: 99;
     }
 
@@ -347,10 +319,6 @@ body {
         border-radius: 10px;
     }
 
-    .card:active {
-        transform: scale(0.97);
-    }
-
     .card-image {
         height: 160px;
     }
@@ -363,47 +331,47 @@ body {
         font-size: 0.85rem;
     }
 
-    /* 图片查看器 */
+    /* 图片查看器 → 全屏沉浸式 */
     .image-viewer {
         background: rgba(0, 0, 0, 0.97);
     }
 
+    .viewer-img {
+        max-width: 100%;
+        max-height: 100vh;
+        /* 手机端去掉 transition，靠 JS 直接设 transform，更跟手 */
+        transition: none;
+    }
+
+    /* 底部控制栏：手机端更大更靠下 */
     .viewer-controls {
-        bottom: 40px;
-        gap: 6px;
+        bottom: max(20px, env(safe-area-inset-bottom, 10px));
+        gap: 8px;
         padding: 0 10px;
     }
 
     .viewer-btn {
-        padding: 10px 14px;
-        font-size: 0.85rem;
+        padding: 10px 16px;
+        font-size: 0.9rem;
+        min-width: 60px;
     }
 
     .close-btn {
-        top: 12px;
+        top: max(12px, env(safe-area-inset-top, 10px));
         right: 12px;
-        padding: 6px 12px;
-        font-size: 1.2rem;
-    }
-
-    .viewer-img {
-        max-width: 95%;
-        max-height: 70vh;
+        padding: 8px 14px;
+        font-size: 1.4rem;
+        z-index: 1010;
     }
 }
 
 /* ============================================
-   超小屏适配 (≤480px 小手机)
+   超小屏 (≤480px)
    ============================================ */
 @media (max-width: 480px) {
     .header {
         font-size: 1.3rem;
         padding: 10px 0;
-    }
-
-    .navbar {
-        padding: 8px 10px;
-        gap: 6px;
     }
 
     .navbar button {
@@ -413,12 +381,7 @@ body {
 
     .search-bar {
         padding: 8px 10px;
-        top: 42px;
-    }
-
-    .search-bar input {
-        padding: 8px 14px;
-        font-size: 0.9rem;
+        top: 38px;
     }
 
     .menu-section {
@@ -430,10 +393,6 @@ body {
         height: 140px;
     }
 
-    .card-content {
-        padding: 12px;
-    }
-
     .card-content h3 {
         font-size: 0.95rem;
     }
@@ -442,30 +401,19 @@ body {
         font-size: 0.8rem;
     }
 
-    .tag {
-        font-size: 11px;
-        padding: 1px 6px;
-    }
-
-    /* 查看器按钮更小更紧凑 */
     .viewer-controls {
-        bottom: 30px;
-        gap: 4px;
+        bottom: max(14px, env(safe-area-inset-bottom, 8px));
+        gap: 5px;
     }
 
     .viewer-btn {
-        padding: 8px 10px;
+        padding: 8px 12px;
         font-size: 0.8rem;
-    }
-
-    .close-btn {
-        top: 10px;
-        right: 10px;
     }
 }
 
 /* ============================================
-   横屏手机适配
+   横屏手机
    ============================================ */
 @media (max-width: 768px) and (orientation: landscape) {
     .header {
@@ -479,7 +427,7 @@ body {
 
     .search-bar {
         padding: 6px 10px;
-        top: 36px;
+        top: 32px;
     }
 
     .menu-section {
@@ -498,6 +446,6 @@ body {
     }
 
     .viewer-img {
-        max-height: 85vh;
+        max-height: 90vh;
     }
 }
